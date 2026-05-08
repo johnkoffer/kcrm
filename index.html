@@ -102,7 +102,7 @@
             <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/60 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
                 <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
             </div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">CRM Studio</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">3D CRM Studio</h1>
             <p class="text-gray-500 dark:text-gray-400 text-sm mt-1" id="login-subtitle">Sign in to continue</p>
         </div>
         <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 py-3 rounded-xl text-sm font-semibold transition-colors mb-4 shadow-sm">
@@ -131,7 +131,7 @@
         <div class="p-5 border-b border-gray-100 dark:border-gray-800">
             <h1 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                CRM Studio
+                3D CRM Studio
             </h1>
             <p class="text-xs text-gray-400 mt-1 truncate" id="sidebar-user-email">Loading...</p>
         </div>
@@ -208,7 +208,7 @@
             <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
-            <h1 class="text-lg font-bold text-indigo-600 dark:text-indigo-400">CRM Studio</h1>
+            <h1 class="text-lg font-bold text-indigo-600 dark:text-indigo-400">3D CRM Studio</h1>
             <div class="w-10"></div>
         </header>
         <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
@@ -806,8 +806,8 @@ const T = {
     }
 };
 
-let currentLang = 'en';
-function t(key) { return T[currentLang][key] || T['en'][key] || key; }
+let currentLang = 'uk';
+function t(key) { return T[currentLang][key] || T['uk'][key] || key; }
 
 function setLang(lang) {
     currentLang = lang;
