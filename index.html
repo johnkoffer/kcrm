@@ -2089,12 +2089,15 @@ async function diagSave() {
 }
 
 async function init() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) await onLogin(session.user);
-    sb.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session) await onLogin(session.user);
-        if (event === 'SIGNED_OUT') location.reload();
-    });
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) onLogin(session.user);
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      void onLogin(session.user); // без await внутри обработчика
+    }
+    if (event === 'SIGNED_OUT') location.reload();
+  });
 }
 
 init();
