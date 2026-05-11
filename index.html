@@ -210,6 +210,11 @@
                 <span data-t="importData">Import Data</span>
                 <input type="file" accept=".json" onchange="importData(event)" class="hidden">
             </label>
+            <button onclick="diagSave()" class="sidebar-link w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-yellow-600 dark:text-yellow-400">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Test Save</span>
+            </button>
+            <div id="diag-output" class="text-xs px-4 py-1 text-gray-400 whitespace-pre-wrap"></div>
             <button onclick="doLogout()" class="sidebar-link w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-500 dark:text-red-400">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                 <span data-t="logout">Log out</span>
@@ -991,7 +996,7 @@ async function onLogin(user) {
 // ====================================================================
 // SUPABASE DATA
 // ====================================================================
-function setSaveStatus(status) {
+function setSaveStatus(status, detail) {
     const dot = document.getElementById('save-status-dot');
     const label = document.getElementById('save-status-label');
     if (!dot) return;
@@ -1002,7 +1007,8 @@ function setSaveStatus(status) {
     };
     const [cls, txt] = statuses[status] || statuses.saved;
     dot.className = `w-2 h-2 rounded-full shrink-0 ${cls}`;
-    label.textContent = txt;
+    label.textContent = detail ? txt + ': ' + detail : txt;
+    label.title = detail || '';
 }
 
 async function loadFromSupabase() {
@@ -1037,41 +1043,52 @@ async function _doSave(retryCount) {
         const snapshot = JSON.parse(JSON.stringify(DB));
         const payload = { user_id: currentUserId, data: snapshot, updated_at: new Date().toISOString() };
 
-        // Attempt upsert
-        const { error: upsertError } = await sb.from('crm_data')
+        // 1. Try upsert
+        const { error: upsertErr } = await sb.from('crm_data')
             .upsert(payload, { onConflict: 'user_id' });
 
-        if (upsertError) {
-            console.warn('Upsert failed, trying explicit insert/update:', upsertError.message);
-            // Check if row exists
-            const { data: existing } = await sb.from('crm_data')
+        if (!upsertErr) {
+            setSaveStatus('saved');
+        } else {
+            const errMsg = upsertErr.message + ' (code: ' + upsertErr.code + ')';
+            console.warn('Upsert failed:', errMsg);
+
+            // 2. Fallback: check existence
+            const { data: existing, error: selectErr } = await sb.from('crm_data')
                 .select('user_id').eq('user_id', currentUserId).maybeSingle();
 
-            let finalError;
-            if (existing) {
-                const { error } = await sb.from('crm_data')
+            if (selectErr) {
+                console.error('Select error:', selectErr.message);
+                if (retryCount < 2) { willRetry = true; }
+                else { setSaveStatus('error', 'SELECT: ' + selectErr.message); }
+            } else if (existing) {
+                // UPDATE
+                const { error: updateErr } = await sb.from('crm_data')
                     .update({ data: snapshot, updated_at: payload.updated_at })
                     .eq('user_id', currentUserId);
-                finalError = error;
+                if (updateErr) {
+                    console.error('Update error:', updateErr.message);
+                    if (retryCount < 2) { willRetry = true; }
+                    else { setSaveStatus('error', 'UPDATE: ' + updateErr.message); }
+                } else {
+                    setSaveStatus('saved');
+                }
             } else {
-                const { error } = await sb.from('crm_data').insert(payload);
-                finalError = error;
+                // INSERT
+                const { error: insertErr } = await sb.from('crm_data').insert(payload);
+                if (insertErr) {
+                    console.error('Insert error:', insertErr.message);
+                    if (retryCount < 2) { willRetry = true; }
+                    else { setSaveStatus('error', 'INSERT: ' + insertErr.message); }
+                } else {
+                    setSaveStatus('saved');
+                }
             }
-
-            if (finalError) {
-                console.error('Save error (fallback):', finalError.message);
-                if (retryCount < 2) { willRetry = true; }
-                else { setSaveStatus('error'); }
-            } else {
-                setSaveStatus('saved');
-            }
-        } else {
-            setSaveStatus('saved');
         }
     } catch (e) {
-        console.error('Save exception:', e.message);
+        console.error('Save exception:', e);
         if (retryCount < 2) { willRetry = true; }
-        else { setSaveStatus('error'); }
+        else { setSaveStatus('error', String(e)); }
     } finally {
         if (!willRetry) {
             isSaving = false;
@@ -1079,7 +1096,9 @@ async function _doSave(retryCount) {
         }
     }
     if (willRetry) {
-        await new Promise(r => setTimeout(r, 1200 * (retryCount + 1)));
+        const delay = 1200 * (retryCount + 1);
+        console.warn('Retry ' + (retryCount+1) + '/2 in ' + delay + 'ms');
+        await new Promise(r => setTimeout(r, delay));
         await _doSave(retryCount + 1);
     }
 }
@@ -2031,6 +2050,44 @@ function importData(event) {
 // ====================================================================
 // INIT
 // ====================================================================
+// ====================================================================
+// DIAGNOSTICS
+// ====================================================================
+async function diagSave() {
+    const out = document.getElementById('diag-output');
+    if (!out) return;
+    out.className = 'text-xs mt-2 p-2 rounded bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300';
+    out.textContent = '⏳ Testing...';
+
+    const steps = [];
+    try {
+        // Step 1: auth check
+        const { data: { user } } = await sb.auth.getUser();
+        steps.push('✅ Auth: ' + (user ? user.email : 'NO USER'));
+        if (!user) { out.textContent = steps.join('\n'); return; }
+
+        // Step 2: select
+        const { data: sel, error: selErr } = await sb.from('crm_data')
+            .select('user_id, updated_at').eq('user_id', user.id).maybeSingle();
+        if (selErr) steps.push('❌ SELECT error: ' + selErr.message + ' [' + selErr.code + ']');
+        else steps.push('✅ SELECT: ' + (sel ? 'row exists, updated=' + sel.updated_at : 'no row yet'));
+
+        // Step 3: upsert test
+        const testPayload = { user_id: user.id, data: DB, updated_at: new Date().toISOString() };
+        const { error: upErr } = await sb.from('crm_data').upsert(testPayload, { onConflict: 'user_id' });
+        if (upErr) steps.push('❌ UPSERT error: ' + upErr.message + ' [' + upErr.code + ']');
+        else steps.push('✅ UPSERT: success');
+
+        out.className = upErr
+            ? 'text-xs mt-2 p-2 rounded bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 whitespace-pre-wrap'
+            : 'text-xs mt-2 p-2 rounded bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 whitespace-pre-wrap';
+        out.textContent = steps.join('\n');
+    } catch(e) {
+        out.className = 'text-xs mt-2 p-2 rounded bg-red-50 text-red-700 whitespace-pre-wrap';
+        out.textContent = '💥 Exception: ' + e.message;
+    }
+}
+
 async function init() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) await onLogin(session.user);
