@@ -89,22 +89,6 @@
 
         /* Mobile sidebar overlay */
         #sidebar-overlay { backdrop-filter: blur(2px); }
-
-        /* Deadline badges */
-        .deadline-overdue { background: #fff0f0; color: #dc2626; border: 1px solid #fecaca; }
-        .deadline-soon { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-        .deadline-ok { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-        .dark .deadline-overdue { background: #3b0a0a; color: #fca5a5; border-color: #7f1d1d; }
-        .dark .deadline-soon { background: #3b1f02; color: #fcd34d; border-color: #78350f; }
-        .dark .deadline-ok { background: #052e16; color: #86efac; border-color: #14532d; }
-
-        /* Deadline pulse for overdue */
-        .deadline-pulse { animation: deadlinePulse 2s infinite; }
-        @keyframes deadlinePulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-        /* Links list */
-        .link-item { transition: background 0.15s; }
-        .link-item:hover { background: rgba(90,103,216,0.05); }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen transition-colors duration-200">
@@ -286,7 +270,6 @@
                                     <th class="px-4 py-3 text-right" onclick="sortProjects('price')"><span data-t="colPrice">$/m²</span> <span class="sort-arrow" id="sort-3d-price">▼</span></th>
                                     <th class="px-4 py-3 text-right" onclick="sortProjects('total')"><span data-t="colTotal">Total, $</span> <span class="sort-arrow" id="sort-3d-total">▼</span></th>
                                     <th class="px-4 py-3 text-right" onclick="sortProjects('debt')"><span data-t="colDebt">Debt, $</span> <span class="sort-arrow" id="sort-3d-debt">▼</span></th>
-                                    <th class="px-4 py-3 text-center" onclick="sortProjects('deadline')"><span data-t="colDeadline">Deadline</span> <span class="sort-arrow" id="sort-3d-deadline">▼</span></th>
                                     <th class="px-4 py-3 text-center"><span data-t="colStatus">Status</span></th>
                                     <th class="px-4 py-3 text-center"><span data-t="colActions">Actions</span></th>
                                 </tr>
@@ -539,7 +522,6 @@ const T = {
         colPrice: '$/m²',
         colTotal: 'Total, $',
         colDebt: 'Debt, $',
-        colDeadline: 'Deadline',
         colStatus: 'Status',
         colActions: 'Actions',
         colDesc: 'Description',
@@ -664,29 +646,6 @@ const T = {
         toastInvalidFile: 'Error: invalid file format',
         toastDesignerNameRequired: "Enter designer's name",
         toastAmountPositive: 'Amount must be positive',
-        // Deadline
-        deadline: 'Deadline',
-        deadlineOverdue: 'Overdue',
-        deadlineSoon: 'Soon',
-        deadlineToday: 'Today!',
-        daysLeft: 'd left',
-        daysOverdue: 'd overdue',
-        noDeadline: '—',
-        // Notes & Links
-        notesLinks: 'Notes & Links',
-        notesLabel: 'Notes',
-        notesPlaceholder: 'Add notes about the project...',
-        linksLabel: 'Links',
-        addLink: 'Add Link',
-        linkDesc: 'Description',
-        linkUrl: 'URL',
-        linkDescPlaceholder: 'e.g. Google Drive',
-        linkUrlPlaceholder: 'https://...',
-        noLinks: 'No links yet',
-        deleteLink: 'Delete',
-        // Advance in new project modal
-        addInitialAdvance: 'Add advance payment',
-        initialAdvanceAmount: 'Advance amount, $',
         months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
         monthsShort: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     },
@@ -842,29 +801,6 @@ const T = {
         toastInvalidFile: 'Помилка: невірний формат файлу',
         toastDesignerNameRequired: "Введіть ім'я дизайнера",
         toastAmountPositive: 'Сума має бути більше нуля',
-        // Deadline
-        deadline: 'Дедлайн',
-        deadlineOverdue: 'Прострочено',
-        deadlineSoon: 'Скоро',
-        deadlineToday: 'Сьогодні!',
-        daysLeft: 'д залишилось',
-        daysOverdue: 'д прострочено',
-        noDeadline: '—',
-        // Notes & Links
-        notesLinks: 'Нотатки та посилання',
-        notesLabel: 'Нотатки',
-        notesPlaceholder: 'Додайте нотатки до проєкту...',
-        linksLabel: 'Посилання',
-        addLink: 'Додати посилання',
-        linkDesc: 'Опис',
-        linkUrl: 'URL',
-        linkDescPlaceholder: 'напр. Google Drive',
-        linkUrlPlaceholder: 'https://...',
-        noLinks: 'Посилань поки немає',
-        deleteLink: 'Видалити',
-        // Advance in new project modal
-        addInitialAdvance: 'Додати авансовий платіж',
-        initialAdvanceAmount: 'Сума авансу, $',
         months: ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'],
         monthsShort: ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'],
     }
@@ -1022,26 +958,65 @@ async function loadFromSupabase() {
 function saveData() {
     clearTimeout(saveTimer);
     setSaveStatus('saving');
-    saveTimer = setTimeout(() => executeSave(), 800);
+    saveTimer = setTimeout(() => _doSave(0), 800);
 }
 
-async function executeSave() {
-    if (isSaving) { pendingSave = true; return; }
-    isSaving = true;
+async function executeSave() { await _doSave(0); }
+
+async function _doSave(retryCount) {
+    if (retryCount === 0) {
+        if (isSaving) { pendingSave = true; return; }
+        isSaving = true;
+    }
+    let willRetry = false;
     try {
         const snapshot = JSON.parse(JSON.stringify(DB));
-        const { error } = await sb.from('crm_data').upsert(
-            { user_id: currentUserId, data: snapshot, updated_at: new Date().toISOString() },
-            { onConflict: 'user_id' }
-        );
-        setSaveStatus(error ? 'error' : 'saved');
-        if (error) console.error('Save error:', error);
+        const payload = { user_id: currentUserId, data: snapshot, updated_at: new Date().toISOString() };
+
+        // Attempt upsert
+        const { error: upsertError } = await sb.from('crm_data')
+            .upsert(payload, { onConflict: 'user_id' });
+
+        if (upsertError) {
+            console.warn('Upsert failed, trying explicit insert/update:', upsertError.message);
+            // Check if row exists
+            const { data: existing } = await sb.from('crm_data')
+                .select('user_id').eq('user_id', currentUserId).maybeSingle();
+
+            let finalError;
+            if (existing) {
+                const { error } = await sb.from('crm_data')
+                    .update({ data: snapshot, updated_at: payload.updated_at })
+                    .eq('user_id', currentUserId);
+                finalError = error;
+            } else {
+                const { error } = await sb.from('crm_data').insert(payload);
+                finalError = error;
+            }
+
+            if (finalError) {
+                console.error('Save error (fallback):', finalError.message);
+                if (retryCount < 2) { willRetry = true; }
+                else { setSaveStatus('error'); }
+            } else {
+                setSaveStatus('saved');
+            }
+        } else {
+            setSaveStatus('saved');
+        }
     } catch (e) {
-        console.error('Save exception:', e);
-        setSaveStatus('error');
+        console.error('Save exception:', e.message);
+        if (retryCount < 2) { willRetry = true; }
+        else { setSaveStatus('error'); }
     } finally {
-        isSaving = false;
-        if (pendingSave) { pendingSave = false; saveData(); }
+        if (!willRetry) {
+            isSaving = false;
+            if (pendingSave) { pendingSave = false; saveData(); }
+        }
+    }
+    if (willRetry) {
+        await new Promise(r => setTimeout(r, 1200 * (retryCount + 1)));
+        await _doSave(retryCount + 1);
     }
 }
 
@@ -1139,24 +1114,6 @@ function getDesignerName(id) {
 }
 function calcAdvancesSum(p) { return (p.advances || []).reduce((s, a) => s + parseFloat(a.amount || 0), 0); }
 function calcDebt(p) { return Math.max(0, p.total - calcAdvancesSum(p)); }
-
-function getDeadlineInfo(p) {
-    if (!p.deadline) return null;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const dl = new Date(p.deadline); dl.setHours(0,0,0,0);
-    const diff = Math.round((dl - today) / (1000 * 60 * 60 * 24));
-    return { diff, date: dl };
-}
-function deadlineBadgeHtml(p) {
-    const info = getDeadlineInfo(p);
-    if (!info) return `<span class="text-gray-300 dark:text-gray-600 text-xs">—</span>`;
-    const { diff } = info;
-    if (diff < 0) return `<span class="badge deadline-overdue deadline-pulse">⚠ ${Math.abs(diff)} ${t('daysOverdue')}</span>`;
-    if (diff === 0) return `<span class="badge deadline-overdue deadline-pulse">🔥 ${t('deadlineToday')}</span>`;
-    if (diff <= 3) return `<span class="badge deadline-soon">⏰ ${diff} ${t('daysLeft')}</span>`;
-    if (diff <= 7) return `<span class="badge deadline-soon">${diff} ${t('daysLeft')}</span>`;
-    return `<span class="badge deadline-ok">${diff} ${t('daysLeft')}</span>`;
-}
 
 function inputClass() {
     return 'w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none';
@@ -1268,7 +1225,6 @@ function renderProjects() {
             case 'price':    va = a.pricePerSqm; vb = b.pricePerSqm; break;
             case 'total':    va = a.total; vb = b.total; break;
             case 'debt':     va = calcDebt(a); vb = calcDebt(b); break;
-            case 'deadline': va = a.deadline ? new Date(a.deadline) : new Date('9999'); vb = b.deadline ? new Date(b.deadline) : new Date('9999'); break;
             default:         va = a.date; vb = b.date;
         }
         if (typeof va === 'string') return projectSortDir * va.localeCompare(vb);
@@ -1300,7 +1256,6 @@ function renderProjects() {
             <td class="px-4 py-3 text-right text-sm">${fmt(p.pricePerSqm)}</td>
             <td class="px-4 py-3 text-right font-semibold text-sm">$${fmt(p.total)}</td>
             <td class="px-4 py-3 text-right font-semibold text-sm ${debt > 0 ? 'text-red-600' : 'text-green-600'}">$${fmt(debt)}</td>
-            <td class="px-4 py-3 text-center">${deadlineBadgeHtml(p)}</td>
             <td class="px-4 py-3 text-center"><span class="badge ${statusClasses[p.status]}">${statusLabels[p.status]}</span></td>
             <td class="px-4 py-3 text-center">
                 <div class="flex gap-1 justify-center">
@@ -1348,12 +1303,8 @@ function openProjectModal(id = null) {
     openModal(`<div class="p-6">
         <h3 class="text-lg font-bold mb-5">${p ? t('editProject') : t('newProjectTitle')}</h3>
         <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-3">
-                <div><label class="${labelClass()}">${t('startDate')} *</label>
-                    <input type="date" id="project-date" value="${p ? p.date : new Date().toISOString().split('T')[0]}" class="${inputClass()}"></div>
-                <div><label class="${labelClass()}">${t('deadline')}</label>
-                    <input type="date" id="project-deadline" value="${p && p.deadline ? p.deadline : ''}" class="${inputClass()}"></div>
-            </div>
+            <div><label class="${labelClass()}">${t('startDate')} *</label>
+                <input type="date" id="project-date" value="${p ? p.date : new Date().toISOString().split('T')[0]}" class="${inputClass()}"></div>
             <div><label class="${labelClass()}">${t('designer')} *</label>
                 <select id="project-designer" class="${inputClass()}">
                     <option value="">${t('designer')}</option>${designerOptions}</select></div>
@@ -1375,32 +1326,12 @@ function openProjectModal(id = null) {
                     <option value="advance" ${p && p.status === 'advance' ? 'selected' : ''}>${t('statusAdvance')}</option>
                     <option value="paid" ${p && p.status === 'paid' ? 'selected' : ''}>${t('statusPaid')}</option>
                 </select></div>
-            ${!p ? `<div class="border border-dashed border-indigo-200 dark:border-indigo-800 rounded-xl p-4 bg-indigo-50/50 dark:bg-indigo-900/10">
-                <label class="flex items-center gap-2 cursor-pointer mb-3">
-                    <input type="checkbox" id="project-has-advance" onchange="toggleInitialAdvance()" class="w-4 h-4 rounded accent-indigo-600">
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">${t('addInitialAdvance')}</span>
-                </label>
-                <div id="initial-advance-block" class="hidden space-y-3">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div><label class="${labelClass()}">${t('advanceDate')}</label>
-                            <input type="date" id="project-advance-date" value="${new Date().toISOString().split('T')[0]}" class="${inputClass()}"></div>
-                        <div><label class="${labelClass()}">${t('initialAdvanceAmount')}</label>
-                            <input type="number" step="0.01" id="project-advance-amount" class="${inputClass()}" placeholder="0.00"></div>
-                    </div>
-                    <div><label class="${labelClass()}">${t('advanceComment')}</label>
-                        <input id="project-advance-comment" class="${inputClass()}" placeholder="..."></div>
-                </div>
-            </div>` : ''}
         </div>
         <div class="flex gap-3 mt-6">
             <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-semibold transition-colors">${t('cancel')}</button>
             <button onclick="saveProject('${id || ''}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">${t('save')}</button>
         </div>
     </div>`);
-}
-function toggleInitialAdvance() {
-    const cb = document.getElementById('project-has-advance');
-    document.getElementById('initial-advance-block').classList.toggle('hidden', !cb.checked);
 }
 function calcProjectTotal() {
     const area = parseFloat(document.getElementById('project-area')?.value) || 0;
@@ -1410,7 +1341,6 @@ function calcProjectTotal() {
 }
 function saveProject(id) {
     const date = document.getElementById('project-date').value;
-    const deadline = document.getElementById('project-deadline')?.value || '';
     const designerId = document.getElementById('project-designer').value;
     const name = document.getElementById('project-name').value.trim();
     const area = parseFloat(document.getElementById('project-area').value) || 0;
@@ -1420,23 +1350,9 @@ function saveProject(id) {
     const total = parseFloat((area * pricePerSqm).toFixed(2));
     if (id) {
         const p = DB.projects.find(x => x.id === id);
-        if (p) Object.assign(p, { date, deadline, designerId, name, area, pricePerSqm, total, status });
+        if (p) Object.assign(p, { date, designerId, name, area, pricePerSqm, total, status });
     } else {
-        const advances = [];
-        const hasAdv = document.getElementById('project-has-advance')?.checked;
-        if (hasAdv) {
-            const advDate = document.getElementById('project-advance-date').value;
-            const advAmount = parseFloat(document.getElementById('project-advance-amount').value) || 0;
-            const advComment = document.getElementById('project-advance-comment').value.trim();
-            if (advDate && advAmount > 0) advances.push({ date: advDate, amount: advAmount, comment: advComment });
-        }
-        let finalStatus = status;
-        if (advances.length > 0) {
-            const advSum = advances.reduce((s, a) => s + a.amount, 0);
-            if (advSum >= total && total > 0) finalStatus = 'paid';
-            else if (advSum > 0) finalStatus = 'advance';
-        }
-        DB.projects.push({ id: uuid(), date, deadline, designerId, name, area, pricePerSqm, total, status: finalStatus, advances, notes: '', links: [], archived: false, deleted: false });
+        DB.projects.push({ id: uuid(), date, designerId, name, area, pricePerSqm, total, status, advances: [], archived: false, deleted: false });
     }
     saveData(); closeModal(); renderProjects(); showToast(t('toastProjectSaved'));
 }
@@ -1447,8 +1363,6 @@ function saveProject(id) {
 function openProjectDetails(id) {
     const p = DB.projects.find(x => x.id === id);
     if (!p) return;
-    if (!p.notes) p.notes = '';
-    if (!p.links) p.links = [];
     const debt = calcDebt(p);
     const advSum = calcAdvancesSum(p);
     const designerOptions = DB.designers.map(dd => `<option value="${dd.id}" ${p.designerId === dd.id ? 'selected' : ''}>${dd.name}</option>`).join('');
@@ -1465,47 +1379,21 @@ function openProjectDetails(id) {
     } else {
         advancesHtml = `<p class="text-gray-400 text-sm py-4 text-center">${t('noAdvances')}</p>`;
     }
-
-    // Deadline info
-    const dlInfo = getDeadlineInfo(p);
-    let deadlineAlert = '';
-    if (dlInfo) {
-        if (dlInfo.diff < 0) deadlineAlert = `<div class="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-3 py-2 mb-3"><span class="text-red-500 text-lg">⚠️</span><span class="text-sm font-semibold text-red-600 dark:text-red-400">${t('deadlineOverdue')}: ${Math.abs(dlInfo.diff)} ${t('daysOverdue')}</span></div>`;
-        else if (dlInfo.diff === 0) deadlineAlert = `<div class="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-3 py-2 mb-3"><span class="text-red-500 text-lg">🔥</span><span class="text-sm font-semibold text-red-600 dark:text-red-400">${t('deadlineToday')}</span></div>`;
-        else if (dlInfo.diff <= 3) deadlineAlert = `<div class="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2 mb-3"><span class="text-amber-500 text-lg">⏰</span><span class="text-sm font-semibold text-amber-600 dark:text-amber-400">${dlInfo.diff} ${t('daysLeft')}</span></div>`;
-    }
-
-    // Links HTML
-    const linksHtml = p.links.length
-        ? p.links.map((l, i) => `
-            <div class="link-item flex items-center gap-2 py-2 px-2 rounded-lg border border-gray-100 dark:border-gray-800 mb-1.5">
-                <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                <div class="flex-1 min-w-0">
-                    <a href="${l.url}" target="_blank" rel="noopener" class="text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:underline truncate block">${l.desc || l.url}</a>
-                    <span class="text-xs text-gray-400 truncate block">${l.url}</span>
-                </div>
-                <button onclick="deleteProjectLink('${p.id}',${i})" class="p-1 text-red-400 hover:text-red-600 transition-colors shrink-0"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-            </div>`).join('')
-        : `<p class="text-gray-400 text-sm py-2 text-center">${t('noLinks')}</p>`;
-
     document.getElementById('detail-modal-content').innerHTML = `
         <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold">${p.name}</h3>
                 <button onclick="closeDetailModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            ${deadlineAlert}
             <div class="space-y-3 mb-6">
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="block text-xs font-medium text-gray-500 mb-1">${t('startDate')}</label>
                         <input type="date" id="detail-date" value="${p.date}" class="${inputClass()}"></div>
-                    <div><label class="block text-xs font-medium text-gray-500 mb-1">${t('deadline')}</label>
-                        <input type="date" id="detail-deadline" value="${p.deadline || ''}" class="${inputClass()}"></div>
+                    <div><label class="block text-xs font-medium text-gray-500 mb-1">${t('designer')}</label>
+                        <select id="detail-designer" class="${inputClass()}">${designerOptions}</select></div>
                 </div>
-                <div><label class="block text-xs font-medium text-gray-500 mb-1">${t('designer')}</label>
-                    <select id="detail-designer" class="${inputClass()}">${designerOptions}</select></div>
                 <div><label class="block text-xs font-medium text-gray-500 mb-1">${t('objectName')}</label>
                     <input id="detail-name" value="${p.name}" class="${inputClass()}"></div>
                 <div class="grid grid-cols-3 gap-3">
@@ -1537,9 +1425,7 @@ function openProjectDetails(id) {
                 <button onclick="saveProjectDetails('${p.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">${t('saveChanges')}</button>
                 <button onclick="deleteProject('${p.id}')" class="w-full py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 text-sm font-semibold transition-colors">${t('delete')}</button>
             </div>
-
-            <!-- ADVANCES -->
-            <div class="border-t border-gray-100 dark:border-gray-700 pt-4 mb-4">
+            <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
                 <div class="flex items-center justify-between mb-3">
                     <h4 class="font-semibold text-sm">${t('advancePayments')}</h4>
                     <button onclick="addAdvance('${p.id}')" class="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-semibold">
@@ -1548,26 +1434,6 @@ function openProjectDetails(id) {
                     </button>
                 </div>
                 <div id="advances-list">${advancesHtml}</div>
-            </div>
-
-            <!-- NOTES & LINKS -->
-            <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
-                <h4 class="font-semibold text-sm mb-3">${t('notesLinks')}</h4>
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-500 mb-1">${t('notesLabel')}</label>
-                    <textarea id="detail-notes" rows="3" class="${inputClass()} resize-none" placeholder="${t('notesPlaceholder')}">${p.notes || ''}</textarea>
-                    <button onclick="saveProjectNotes('${p.id}')" class="mt-2 text-xs px-3 py-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 font-semibold transition-colors">${t('save')}</button>
-                </div>
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-xs font-medium text-gray-500">${t('linksLabel')}</label>
-                        <button onclick="openAddLinkModal('${p.id}')" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-semibold">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            ${t('addLink')}
-                        </button>
-                    </div>
-                    <div id="links-list">${linksHtml}</div>
-                </div>
             </div>
         </div>`;
     document.getElementById('detail-modal').classList.remove('hidden');
@@ -1583,7 +1449,6 @@ function saveProjectDetails(id) {
     const p = DB.projects.find(x => x.id === id);
     if (!p) return;
     p.date = document.getElementById('detail-date').value;
-    p.deadline = document.getElementById('detail-deadline').value || '';
     p.designerId = document.getElementById('detail-designer').value;
     p.name = document.getElementById('detail-name').value.trim();
     p.area = parseFloat(document.getElementById('detail-area').value) || 0;
@@ -1591,45 +1456,6 @@ function saveProjectDetails(id) {
     p.total = parseFloat((p.area * p.pricePerSqm).toFixed(2));
     p.status = document.getElementById('detail-status').value;
     saveData(); openProjectDetails(id); renderProjects(); showToast(t('toastProjectUpdated'));
-}
-function saveProjectNotes(id) {
-    const p = DB.projects.find(x => x.id === id);
-    if (!p) return;
-    p.notes = document.getElementById('detail-notes').value;
-    saveData(); showToast(t('toastProjectUpdated'));
-}
-function openAddLinkModal(projectId) {
-    openModal(`<div class="p-6">
-        <h3 class="text-lg font-bold mb-5">${t('addLink')}</h3>
-        <div class="space-y-4">
-            <div><label class="${labelClass()}">${t('linkDesc')}</label>
-                <input id="link-desc" class="${inputClass()}" placeholder="${t('linkDescPlaceholder')}"></div>
-            <div><label class="${labelClass()}">${t('linkUrl')} *</label>
-                <input id="link-url" class="${inputClass()}" placeholder="${t('linkUrlPlaceholder')}" type="url"></div>
-        </div>
-        <div class="flex gap-3 mt-6">
-            <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-semibold transition-colors">${t('cancel')}</button>
-            <button onclick="saveProjectLink('${projectId}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">${t('save')}</button>
-        </div>
-    </div>`);
-}
-function saveProjectLink(projectId) {
-    const url = document.getElementById('link-url').value.trim();
-    const desc = document.getElementById('link-desc').value.trim();
-    if (!url) { showToast(t('toastFillRequired'), 'error'); return; }
-    const p = DB.projects.find(x => x.id === projectId);
-    if (!p) return;
-    if (!p.links) p.links = [];
-    p.links.push({ url, desc });
-    saveData(); closeModal(); openProjectDetails(projectId); showToast(t('toastProjectUpdated'));
-}
-function deleteProjectLink(projectId, idx) {
-    showConfirm(t('confirmDeleteRecord'), () => {
-        const p = DB.projects.find(x => x.id === projectId);
-        if (!p) return;
-        p.links.splice(idx, 1);
-        saveData(); openProjectDetails(projectId); showToast(t('toastRecordDeleted'));
-    });
 }
 function deleteProject(id) {
     showConfirm(t('confirmTrash'), () => {
