@@ -105,6 +105,63 @@
         /* Links list */
         .link-item { transition: background 0.15s; }
         .link-item:hover { background: rgba(90,103,216,0.05); }
+
+        /* ========== MOBILE LAYOUT ========== */
+        /* Bottom nav bar */
+        #bottom-nav { display: none; }
+        @media (max-width: 1023px) {
+            #bottom-nav { display: flex; }
+            /* Extra bottom padding so content isn't hidden behind bottom nav */
+            #main-content-inner { padding-bottom: 80px !important; }
+        }
+        .bottom-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; font-size: 0.6rem; font-weight: 600; color: #9ca3af; transition: color 0.15s; position: relative; cursor: pointer; border: none; background: none; }
+        .bottom-nav-btn.active { color: #5a67d8; }
+        .dark .bottom-nav-btn.active { color: #818cf8; }
+        .bottom-nav-btn svg { width: 22px; height: 22px; }
+        .bottom-nav-badge { position: absolute; top: 4px; right: calc(50% - 18px); background: #5a67d8; color: white; font-size: 0.55rem; font-weight: 700; border-radius: 999px; min-width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
+        .dark .bottom-nav-badge { background: #818cf8; }
+
+        /* Mobile project cards (shown only on mobile) */
+        .mobile-cards-list { display: none; }
+        .desktop-table-wrap { display: block; }
+        @media (max-width: 767px) {
+            .mobile-cards-list { display: flex; flex-direction: column; gap: 10px; }
+            .desktop-table-wrap { display: none; }
+            /* Filters collapse */
+            #filters-panel { display: none; }
+            #filters-panel.open { display: flex; }
+        }
+
+        /* Mobile project card */
+        .proj-card { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px 16px; transition: box-shadow 0.18s; }
+        .dark .proj-card { background: #111827; border-color: #1f2937; }
+        .proj-card:active { box-shadow: 0 4px 16px rgba(90,103,216,0.15); }
+
+        /* FAB button */
+        .fab { position: fixed; bottom: 74px; right: 18px; z-index: 40; width: 52px; height: 52px; border-radius: 50%; background: #5a67d8; color: white; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(90,103,216,0.45); border: none; cursor: pointer; transition: transform 0.15s, background 0.15s; }
+        .dark .fab { background: #818cf8; box-shadow: 0 4px 16px rgba(129,140,248,0.4); }
+        .fab:active { transform: scale(0.93); }
+        @media (max-width: 767px) { .fab { display: flex; } }
+
+        /* Mobile filters toggle btn */
+        .filter-toggle-btn { display: none; }
+        @media (max-width: 767px) {
+            .filter-toggle-btn { display: flex; }
+            .filter-new-btn-desktop { display: none; }
+        }
+        @media (min-width: 768px) {
+            .filter-new-btn-desktop { display: inline-flex; }
+        }
+
+        /* Swipe hint */
+        @media (max-width: 767px) {
+            .section-header-mobile { display: flex; }
+            .section-header-desktop { display: none; }
+        }
+        @media (min-width: 768px) {
+            .section-header-mobile { display: none; }
+            .section-header-desktop { display: flex; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen transition-colors duration-200">
@@ -219,32 +276,42 @@
 
     <!-- MAIN CONTENT -->
     <main class="flex-1 lg:ml-64 min-h-screen">
-        <!-- Mobile header -->
+        <!-- Mobile header (shown < lg) -->
         <header class="lg:hidden bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 p-4 flex items-center justify-between sticky top-0 z-20">
-            <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            </button>
             <h1 class="text-lg font-bold text-indigo-600 dark:text-indigo-400">3D CRM Studio</h1>
-            <div class="w-10"></div>
+            <div class="w-8"></div>
         </header>
         <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
-        <div class="p-4 md:p-6 lg:p-8">
+        <!-- FAB: floating action button for new project (mobile only) -->
+        <button class="fab" id="fab-btn" onclick="fabAction()" title="New">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        </button>
+
+        <div id="main-content-inner" class="p-4 md:p-6 lg:p-8">
 
             <!-- 3D SECTION -->
             <section id="section-3d" class="section fade-in">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                     <div>
                         <h2 class="text-2xl font-bold" data-t="h3d">3D Visualization</h2>
                         <p class="text-gray-500 dark:text-gray-400 text-sm mt-1" data-t="h3dSub">Manage 3D visualization projects</p>
                     </div>
-                    <button onclick="openProjectModal()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        <span data-t="newProject">New Project</span>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <!-- Filter toggle (mobile only) -->
+                        <button onclick="toggleFilters()" class="filter-toggle-btn items-center gap-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+                            <span data-t="filters">Filters</span> <span id="filter-active-count" class="hidden ml-1 bg-indigo-600 text-white text-xs rounded-full w-4 h-4 inline-flex items-center justify-center"></span>
+                        </button>
+                        <!-- New project (hidden on mobile — use FAB) -->
+                        <button onclick="openProjectModal()" class="filter-new-btn-desktop items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span data-t="newProject">New Project</span>
+                        </button>
+                    </div>
                 </div>
-                <!-- Filters -->
-                <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 mb-4 flex flex-wrap gap-3 items-end">
+                <!-- Filters panel -->
+                <div id="filters-panel" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 mb-4 flex flex-wrap gap-3 items-end">
                     <div>
                         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1" data-t="search">Search</label>
                         <input type="text" id="filter-3d-search" oninput="renderProjects()" placeholder="" data-tp="searchPlaceholder" class="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg px-3 py-2 text-sm w-44 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none">
@@ -273,8 +340,8 @@
                 </div>
                 <!-- Summary cards -->
                 <div id="projects-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
-                <!-- Table -->
-                <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <!-- Table (desktop) -->
+                <div class="desktop-table-wrap bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm" id="projects-table">
                             <thead class="bg-gray-50 dark:bg-gray-800/60 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -300,6 +367,8 @@
                         <p class="text-sm mt-1" data-t="noProjectsSub">Click "New Project" to add the first one</p>
                     </div>
                 </div>
+                <!-- Cards (mobile) -->
+                <div class="mobile-cards-list" id="projects-cards"></div>
             </section>
 
             <!-- OTHER INCOME SECTION -->
@@ -452,6 +521,33 @@
 
         </div>
     </main>
+
+    <!-- BOTTOM NAVIGATION BAR (mobile only) -->
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 safe-bottom" style="padding-bottom: env(safe-area-inset-bottom);">
+        <div class="flex">
+            <button class="bottom-nav-btn active" id="bnav-3d" onclick="navigateTo('3d')">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span id="bnav-badge-3d" class="bottom-nav-badge hidden">0</span>
+                <span data-t="nav3d">3D</span>
+            </button>
+            <button class="bottom-nav-btn" id="bnav-other" onclick="navigateTo('other')">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span data-t="navOther">Income</span>
+            </button>
+            <button class="bottom-nav-btn" id="bnav-designers" onclick="navigateTo('designers')">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span data-t="navDesigners">Team</span>
+            </button>
+            <button class="bottom-nav-btn" id="bnav-stats" onclick="navigateTo('stats')">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span data-t="navStats">Stats</span>
+            </button>
+            <button class="bottom-nav-btn" id="bnav-more" onclick="toggleSidebar()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <span>More</span>
+            </button>
+        </div>
+    </nav>
 </div>
 
 <!-- MODALS -->
@@ -479,7 +575,7 @@
         </div>
     </div>
 </div>
-<div id="toast-container" class="fixed bottom-5 right-5 z-[70] space-y-2"></div>
+<div id="toast-container" class="fixed z-[70] space-y-2" style="bottom: calc(env(safe-area-inset-bottom) + 80px); right: 16px;"></div>
 
 <script>
 // ====================================================================
@@ -518,6 +614,7 @@ const T = {
         h3d: '3D Visualization',
         h3dSub: 'Manage 3D visualization projects',
         newProject: 'New Project',
+        filters: 'Filters',
         search: 'Search',
         searchPlaceholder: 'Project name...',
         designer: 'Designer',
@@ -709,6 +806,7 @@ const T = {
         h3d: '3D Візуалізація',
         h3dSub: 'Управління проектами з 3D візуалізації',
         newProject: 'Новий проект',
+        filters: 'Фільтри',
         search: 'Пошук',
         searchPlaceholder: 'Назва проекту...',
         designer: 'Дизайнер',
@@ -1103,6 +1201,14 @@ function navigateTo(section) {
     document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
     document.getElementById('section-' + section)?.classList.remove('hidden');
     document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === section));
+    // Sync bottom nav
+    ['3d','other','designers','stats'].forEach(s => {
+        const btn = document.getElementById('bnav-' + s);
+        if (btn) btn.classList.toggle('active', s === section);
+    });
+    // Show/hide FAB based on section
+    const fab = document.getElementById('fab-btn');
+    if (fab) fab.style.display = ['3d','other','designers'].includes(section) ? 'flex' : 'none';
     if (window.innerWidth < 1024) {
         document.getElementById('sidebar').classList.add('-translate-x-full');
         document.getElementById('sidebar-overlay').classList.add('hidden');
@@ -1117,6 +1223,34 @@ function navigateTo(section) {
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('-translate-x-full');
     document.getElementById('sidebar-overlay').classList.toggle('hidden');
+}
+
+// FAB action — opens the right modal for the current section
+function fabAction() {
+    if (currentSection === '3d') openProjectModal();
+    else if (currentSection === 'other') openOtherIncomeModal();
+    else if (currentSection === 'designers') openDesignerModal();
+}
+
+// Toggle filters panel on mobile
+function toggleFilters() {
+    const panel = document.getElementById('filters-panel');
+    panel.classList.toggle('open');
+}
+
+// Update active-filter badge count
+function updateFilterBadge() {
+    const search = document.getElementById('filter-3d-search')?.value || '';
+    const designer = document.getElementById('filter-3d-designer')?.value || '';
+    const status = document.getElementById('filter-3d-status')?.value || '';
+    const year = document.getElementById('filter-3d-year')?.value || '';
+    const month = document.getElementById('filter-3d-month')?.value;
+    const count = [search, designer, status, year, (month !== '' && month !== undefined) ? month : ''].filter(Boolean).length;
+    const badge = document.getElementById('filter-active-count');
+    if (badge) {
+        badge.textContent = count;
+        badge.classList.toggle('hidden', count === 0);
+    }
 }
 
 // ====================================================================
@@ -1313,6 +1447,10 @@ function renderProjects() {
     });
 
     document.getElementById('nav-badge-3d').textContent = DB.projects.filter(p => !p.archived && !p.deleted).length;
+    // Update bottom nav badge
+    const bnavBadge = document.getElementById('bnav-badge-3d');
+    const totalCount = DB.projects.filter(p => !p.archived && !p.deleted).length;
+    if (bnavBadge) { bnavBadge.textContent = totalCount; bnavBadge.classList.toggle('hidden', totalCount === 0); }
     const totalSum = projects.reduce((s, p) => s + p.total, 0);
     const totalAdvances = projects.reduce((s, p) => s + calcAdvancesSum(p), 0);
     const totalDebt = projects.reduce((s, p) => s + calcDebt(p), 0);
@@ -1323,7 +1461,9 @@ function renderProjects() {
         <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4"><p class="text-xs text-gray-500 dark:text-gray-400">${t('sumDebt')}</p><p class="text-xl font-bold mt-1 text-red-600">$${fmt(totalDebt)}</p></div>
     `;
 
-    if (!projects.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); populateFilterYears(); return; }
+    updateFilterBadge();
+
+    if (!projects.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); document.getElementById('projects-cards').innerHTML = ''; populateFilterYears(); return; }
     empty.classList.add('hidden');
     const statusLabels = { none: t('statusNone'), advance: t('statusAdvance'), paid: t('statusPaid') };
     const statusClasses = { none: 'status-none', advance: 'status-advance', paid: 'status-paid' };
@@ -1351,6 +1491,47 @@ function renderProjects() {
             </td>
         </tr>`;
     }).join('');
+
+    // Mobile cards
+    const cardsContainer = document.getElementById('projects-cards');
+    if (cardsContainer) {
+        cardsContainer.innerHTML = projects.map(p => {
+            const debt = calcDebt(p);
+            const dlHtml = deadlineBadgeHtml(p);
+            return `<div class="proj-card" onclick="openProjectDetails('${p.id}')">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-base leading-tight truncate">${p.name}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">${getDesignerName(p.designerId)} · ${new Date(p.date).toLocaleDateString(currentLang === 'uk' ? 'uk-UA' : 'en-GB')}</p>
+                    </div>
+                    <span class="badge ${statusClasses[p.status]} shrink-0">${statusLabels[p.status]}</span>
+                </div>
+                <div class="flex items-center gap-3 mt-3">
+                    <div class="flex-1">
+                        <p class="text-xs text-gray-400">${t('colTotal')}</p>
+                        <p class="font-bold text-base">$${fmt(p.total)}</p>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs text-gray-400">${t('colDebt')}</p>
+                        <p class="font-bold text-base ${debt > 0 ? 'text-red-600' : 'text-green-600'}">$${fmt(debt)}</p>
+                    </div>
+                    <div class="flex-1 text-right">
+                        <p class="text-xs text-gray-400">${t('colArea')}</p>
+                        <p class="text-sm font-medium">${fmt(p.area)} m²</p>
+                    </div>
+                </div>
+                ${dlHtml ? `<div class="mt-2">${dlHtml}</div>` : ''}
+                <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                    <span class="text-xs text-indigo-500 font-semibold flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        ${t('colActions')}
+                    </span>
+                    ${p.status === 'paid' ? `<button onclick="event.stopPropagation();archiveProject('${p.id}')" class="text-xs px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 font-semibold">${t('hArchive')}</button>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
     populateFilterYears();
     updateDesignerSelects();
 }
