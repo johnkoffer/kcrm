@@ -111,8 +111,8 @@
         #bottom-nav { display: none; }
         @media (max-width: 1023px) {
             #bottom-nav { display: flex; }
-            /* Extra bottom padding so content isn't hidden behind bottom nav */
-            #main-content-inner { padding-bottom: 80px !important; }
+            /* Extra bottom padding so content isn't hidden behind bottom nav + FAB */
+            #main-content-inner { padding-bottom: 120px !important; }
         }
         .bottom-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; font-size: 0.6rem; font-weight: 600; color: #9ca3af; transition: color 0.15s; position: relative; cursor: pointer; border: none; background: none; }
         .bottom-nav-btn.active { color: #5a67d8; }
@@ -138,7 +138,7 @@
         .proj-card:active { box-shadow: 0 4px 16px rgba(90,103,216,0.15); }
 
         /* FAB button */
-        .fab { position: fixed; bottom: 74px; right: 18px; z-index: 40; width: 52px; height: 52px; border-radius: 50%; background: #5a67d8; color: white; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(90,103,216,0.45); border: none; cursor: pointer; transition: transform 0.15s, background 0.15s; }
+        .fab { position: fixed; bottom: 82px; right: 18px; z-index: 40; width: 52px; height: 52px; border-radius: 50%; background: #5a67d8; color: white; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(90,103,216,0.45); border: none; cursor: pointer; transition: transform 0.15s, background 0.15s; }
         .dark .fab { background: #818cf8; box-shadow: 0 4px 16px rgba(129,140,248,0.4); }
         .fab:active { transform: scale(0.93); }
         @media (max-width: 767px) { .fab { display: flex; } }
@@ -153,8 +153,17 @@
             .filter-new-btn-desktop { display: inline-flex; }
         }
 
-        /* Swipe hint */
+        /* Mobile sidebar: add bottom padding so bottom nav doesn't cover action buttons */
+        @media (max-width: 1023px) {
+            #sidebar { padding-bottom: calc(env(safe-area-inset-bottom) + 68px); }
+        }
+
+        /* Mobile other income cards */
+        .other-mobile-cards { display: none; flex-direction: column; gap: 10px; }
+        .other-desktop-table { display: block; }
         @media (max-width: 767px) {
+            .other-mobile-cards { display: flex; }
+            .other-desktop-table { display: none; }
             .section-header-mobile { display: flex; }
             .section-header-desktop { display: none; }
         }
@@ -378,12 +387,14 @@
                         <h2 class="text-2xl font-bold" data-t="hOther">Other Income</h2>
                         <p class="text-gray-500 dark:text-gray-400 text-sm mt-1" data-t="hOtherSub">Additional income sources</p>
                     </div>
-                    <button onclick="openOtherIncomeModal()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+                    <!-- New record btn hidden on mobile (use FAB) -->
+                    <button onclick="openOtherIncomeModal()" class="filter-new-btn-desktop items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         <span data-t="newRecord">New Record</span>
                     </button>
                 </div>
-                <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <!-- Desktop table -->
+                <div class="other-desktop-table bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead class="bg-gray-50 dark:bg-gray-800/60 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -398,8 +409,15 @@
                         </table>
                     </div>
                     <div id="other-empty" class="hidden p-16 text-center text-gray-400">
+                        <svg class="w-14 h-14 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <p class="font-semibold" data-t="noRecords">No records yet</p>
                     </div>
+                </div>
+                <!-- Mobile cards -->
+                <div class="other-mobile-cards" id="other-cards"></div>
+                <div id="other-empty-mobile" class="hidden other-mobile-cards p-16 text-center text-gray-400">
+                    <svg class="w-14 h-14 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p class="font-semibold" data-t="noRecords">No records yet</p>
                 </div>
             </section>
 
@@ -1990,9 +2008,20 @@ function emptyTrash() { showConfirm(t('confirmEmptyTrash'), () => { DB.projects 
 function renderOtherIncomes() {
     const tbody = document.getElementById('other-tbody');
     const empty = document.getElementById('other-empty');
+    const cardsContainer = document.getElementById('other-cards');
+    const emptyMobile = document.getElementById('other-empty-mobile');
     const incomes = [...DB.otherIncomes].sort((a, b) => new Date(b.date) - new Date(a.date));
-    if (!incomes.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+
+    if (!incomes.length) {
+        tbody.innerHTML = '';
+        empty.classList.remove('hidden');
+        if (cardsContainer) cardsContainer.innerHTML = '';
+        if (emptyMobile) emptyMobile.classList.remove('hidden');
+        return;
+    }
     empty.classList.add('hidden');
+    if (emptyMobile) emptyMobile.classList.add('hidden');
+
     tbody.innerHTML = incomes.map(i => `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
             <td class="px-4 py-3 text-sm">${new Date(i.date).toLocaleDateString(currentLang === 'uk' ? 'uk-UA' : 'en-GB')}</td>
@@ -2005,6 +2034,28 @@ function renderOtherIncomes() {
                 </div>
             </td>
         </tr>`).join('');
+
+    // Mobile cards
+    if (cardsContainer) {
+        cardsContainer.innerHTML = incomes.map(i => `
+            <div class="proj-card">
+                <div class="flex items-start justify-between gap-2 mb-1">
+                    <p class="font-semibold text-base leading-tight flex-1">${i.description}</p>
+                    <p class="text-xl font-bold text-amber-600 dark:text-amber-400 shrink-0">₴${fmt(i.amount)}</p>
+                </div>
+                <p class="text-xs text-gray-400 mb-3">${new Date(i.date).toLocaleDateString(currentLang === 'uk' ? 'uk-UA' : 'en-GB')}</p>
+                <div class="flex gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <button onclick="openOtherIncomeModal('${i.id}')" class="flex-1 text-xs py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 transition-colors font-semibold flex items-center justify-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        ${t('edit')}
+                    </button>
+                    <button onclick="deleteOtherIncome('${i.id}')" class="flex-1 text-xs py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 transition-colors font-semibold flex items-center justify-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        ${t('delete')}
+                    </button>
+                </div>
+            </div>`).join('');
+    }
 }
 function openOtherIncomeModal(id = null) {
     const i = id ? DB.otherIncomes.find(x => x.id === id) : null;
